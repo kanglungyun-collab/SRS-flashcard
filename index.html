@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="SRS 單字卡">
+<meta name="theme-color" content="#4f46e5">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<title>SRS 單字學習卡</title>
+<style>
+:root{--bg:#f1f5f9;--card:#fff;--text:#1e293b;--muted:#94a3b8;--indigo:#4f46e5;--border:#e2e8f0;--red:#ef4444;--orange:#f59e0b;--green:#16a34a;--blue:#3b82f6}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang TC","Noto Sans TC",Arial,sans-serif;background:var(--bg);color:var(--text)}
+body{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+button,input{font:inherit}
+#app{max-width:720px;height:100%;margin:0 auto;padding:8px 10px 12px;display:flex;flex-direction:column}
+header{display:flex;align-items:center;justify-content:space-between;padding:8px 2px 10px}
+.brand{font-weight:900;font-size:22px;color:var(--indigo);display:flex;align-items:center;gap:8px}
+.actions{display:flex;align-items:center;gap:8px}
+.iconbtn,.primary{border:0;border-radius:12px;cursor:pointer}
+.iconbtn{background:transparent;color:#64748b;padding:10px;font-size:19px}
+.primary{background:var(--indigo);color:#fff;padding:10px 14px;font-size:13px;font-weight:800;box-shadow:0 3px 8px rgba(79,70,229,.18)}
+.screen{flex:1;min-height:0}
+#welcomeScreen,#finishScreen{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--muted)}
+.welcomeIcon{width:90px;height:90px;border-radius:24px;background:#fff;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:38px;box-shadow:0 3px 12px rgba(15,23,42,.05);margin-bottom:16px}
+.hidden{display:none!important}
+#studyScreen{display:flex;flex-direction:column;gap:10px;height:100%;min-height:0}
+.topbar{background:#fff;border:1px solid var(--border);border-radius:15px;padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(15,23,42,.04)}
+#cardProgressText{font-size:12px;font-weight:800;color:#64748b;white-space:nowrap}
+.progressTrack{height:8px;background:#f1f5f9;border-radius:99px;overflow:hidden;flex:1}
+#progressBar{height:100%;width:0;background:var(--indigo);transition:width .3s}
+#statsText{display:flex;gap:6px;font-size:10px;font-weight:900}
+#cardContainer{flex:1;min-height:0;perspective:1000px}
+#cardInner{position:relative;width:100%;height:100%;transition:transform .45s;transform-style:preserve-3d}
+#cardInner.flipped{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;background:#fff;border:1px solid var(--border);border-radius:22px;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden;box-shadow:0 8px 24px rgba(15,23,42,.08)}
+.front{display:flex;align-items:center;justify-content:center;text-align:center;padding:24px}
+.frontWrap{display:flex;flex-direction:column;align-items:center;gap:24px}
+.wordRow{display:flex;align-items:center;gap:14px;max-width:100%}
+#frontWord{font-size:clamp(42px,12vw,72px);line-height:1.05;font-weight:950;letter-spacing:-1.5px;word-break:break-word}
+.speak{border:0;border-radius:999px;background:#eef2ff;color:var(--indigo);width:52px;height:52px;flex:0 0 52px;font-size:24px}
+.hint{font-size:11px;color:#cbd5e1;font-weight:800;letter-spacing:.08em}
+.back{transform:rotateY(180deg);display:flex;flex-direction:column}
+.backHead{padding:14px 18px;background:#f8fafc;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between}
+.backHeadWord{font-weight:900;color:var(--indigo);font-size:22px}
+#backDetail{padding:18px;overflow:auto;flex:1;-webkit-overflow-scrolling:touch}
+.detailLine{margin:0 0 9px;font-size:17px;line-height:1.45}
+.detailLine.meta{color:#64748b;font-size:14px;font-weight:500}
+.detailLine.main{color:#4338ca;font-weight:800}
+.example{margin-top:16px;padding-top:14px;border-top:1px solid #f1f5f9;display:flex;align-items:flex-start;gap:10px}
+.example button{border:0;background:#ecfdf5;color:#059669;border-radius:999px;width:38px;height:38px;flex:0 0 38px;font-size:18px}
+.example span{font-size:16px;line-height:1.45;color:#475569;font-style:italic}
+.srs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px;background:#f8fafc;border-top:1px solid #f1f5f9}
+.srs button{border:1px solid var(--border);background:#fff;border-radius:13px;padding:15px 4px;font-size:12px;font-weight:900}
+.again{color:var(--red)}.hard{color:var(--orange)}.good{color:var(--green)}.easy{color:var(--blue)}
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.56);display:flex;align-items:center;justify-content:center;padding:18px;z-index:20}
+.modalCard{width:min(460px,100%);background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.modalTitle{background:var(--indigo);color:#fff;padding:16px 18px;font-weight:900;display:flex;justify-content:space-between;align-items:center}
+.modalBody{padding:18px;max-height:65vh;overflow:auto;line-height:1.55}
+.modalBody h4{margin:8px 0;color:#64748b;font-size:12px;letter-spacing:.08em}
+.modalBody ul{padding-left:20px}
+.close{border:0;background:rgba(255,255,255,.14);color:#fff;border-radius:10px;padding:6px 9px}
+.finishBtn{margin-top:18px;background:#1e293b;color:#fff;border:0;border-radius:14px;padding:12px 24px;font-weight:800}
+.note{font-size:12px;color:#94a3b8;margin-top:12px;max-width:320px;line-height:1.5}
+.offlineBadge{font-size:11px;background:#ecfdf5;color:#047857;border-radius:999px;padding:5px 8px;font-weight:800}
+@media(max-height:700px){#frontWord{font-size:42px}.srs button{padding:11px 2px}#backDetail{padding:14px}}
+</style>
+</head>
+<body>
+<div id="app">
+<header>
+<div class="brand"><span>🧠</span><span>SRS</span><span class="offlineBadge">PWA</span></div>
+<div class="actions">
+<button class="iconbtn" onclick="toggleInfo(true)">ⓘ</button>
+<button class="iconbtn" onclick="resetApp()">↻</button>
+<button class="primary" onclick="document.getElementById('csvInput').click()">匯入 CSV</button>
+<input type="file" id="csvInput" class="hidden" accept=".csv,text/csv" onchange="handleFileUpload(event)">
+</div>
+</header>
+
+<div id="welcomeScreen" class="screen">
+<div class="welcomeIcon">📚</div>
+<div style="font-weight:900;color:#64748b">請匯入 CSV 檔案開始</div>
+<div class="note">CSV 第一欄＝單字，第二欄＝解釋／例句。進度儲存在這台裝置上。安裝到主畫面後可離線啟動。</div>
+</div>
+
+<div id="studyScreen" class="screen hidden">
+<div class="topbar">
+<div id="cardProgressText">0 / 0</div>
+<div class="progressTrack"><div id="progressBar"></div></div>
+<div id="statsText"><span style="color:#ef4444">A:0</span><span style="color:#f59e0b">H:0</span><span style="color:#16a34a">G:0</span><span style="color:#3b82f6">E:0</span></div>
+</div>
+<div id="cardContainer" onclick="flipCard()">
+<div id="cardInner">
+<div class="face front">
+<div class="frontWrap">
+<div class="wordRow">
+<div id="frontWord">單字</div>
+<button class="speak" onclick="event.stopPropagation();speakWord()">🔊</button>
+</div>
+<div class="hint">點一下卡片翻面</div>
+</div>
+</div>
+<div class="face back">
+<div class="backHead">
+<div id="backHeadWord" class="backHeadWord"></div>
+<button class="speak" style="width:42px;height:42px;flex-basis:42px;font-size:19px" onclick="event.stopPropagation();speakWord()">🔊</button>
+</div>
+<div id="backDetail"></div>
+<div class="srs">
+<button class="again" onclick="event.stopPropagation();handleSRS('AGAIN')">Again</button>
+<button class="hard" onclick="event.stopPropagation();handleSRS('HARD')">Hard</button>
+<button class="good" onclick="event.stopPropagation();handleSRS('GOOD')">Good</button>
+<button class="easy" onclick="event.stopPropagation();handleSRS('EASY')">Easy</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="finishScreen" class="screen hidden">
+<div style="font-size:58px">✅</div>
+<h2 style="margin:10px 0 4px">本次練習完成！</h2>
+<div style="color:#94a3b8">你已複習完所有卡片。</div>
+<button class="finishBtn" onclick="clearAndReload()">重新開始</button>
+</div>
+</div>
+
+<div id="infoModal" class="modal hidden">
+<div class="modalCard">
+<div class="modalTitle">學習說明 <button class="close" onclick="toggleInfo(false)">✕</button></div>
+<div class="modalBody">
+<h4>SRS 邏輯</h4>
+<ul>
+<li><b style="color:#ef4444">Again</b>：完全沒記住，稍後很快再出現。</li>
+<li><b style="color:#f59e0b">Hard</b>：勉強想起，放到剩餘卡片中段。</li>
+<li><b style="color:#16a34a">Good</b>：順利記住，移到本輪末端。</li>
+<li><b style="color:#3b82f6">Easy</b>：太簡單，直接移出本次複習。</li>
+</ul>
+<h4>iPhone</h4>
+<div>Safari 開啟後，按分享 → 加入主畫面。之後可像 App 一樣開啟。</div>
+</div>
+</div>
+</div>
+
+<script>
+let cards=[],initialTotal=0,isFlipped=false,stats={again:0,hard:0,good:0,easy:0};
+
+function saveProgress(){localStorage.setItem('srs_flashcard_pwa_v1',JSON.stringify({cards,initialTotal,stats,timestamp:Date.now()}));}
+function loadProgress(){
+ const saved=localStorage.getItem('srs_flashcard_pwa_v1'); if(!saved)return;
+ try{
+  const data=JSON.parse(saved); cards=data.cards||[]; initialTotal=data.initialTotal||0; stats=data.stats||{again:0,hard:0,good:0,easy:0};
+  if(cards.length){welcomeScreen.classList.add('hidden');studyScreen.classList.remove('hidden');renderCard();}
+  else if(initialTotal>0){welcomeScreen.classList.add('hidden');finishScreen.classList.remove('hidden');}
+ }catch(e){console.error(e)}
+}
+function parseCSV(str){
+ const arr=[];let quote=false;
+ for(let row=0,col=0,c=0;c<str.length;c++){
+  let cc=str[c],nc=str[c+1];arr[row]=arr[row]||[];arr[row][col]=arr[row][col]||'';
+  if(cc=='"'&&quote&&nc=='"'){arr[row][col]+=cc;++c;continue}
+  if(cc=='"'){quote=!quote;continue}
+  if(cc==','&&!quote){++col;continue}
+  if(cc=='\r'&&nc=='\n'&&!quote){++row;col=0;++c;continue}
+  if((cc=='\n'||cc=='\r')&&!quote){++row;col=0;continue}
+  arr[row][col]+=cc;
+ } return arr;
+}
+function handleFileUpload(event){
+ const file=event.target.files[0];if(!file)return;
+ const reader=new FileReader();
+ reader.onload=e=>{
+  cards=parseCSV(e.target.result).map((row,index)=>({id:`card-${Date.now()}-${index}`,word:(row[0]||'').trim(),detail:(row[1]||'').trim()})).filter(c=>c.word&&c.detail);
+  if(cards.length){initialTotal=cards.length;stats={again:0,hard:0,good:0,easy:0};isFlipped=false;welcomeScreen.classList.add('hidden');finishScreen.classList.add('hidden');studyScreen.classList.remove('hidden');saveProgress();renderCard();}
+  else alert('沒有讀到有效資料。請確認 CSV 第一欄是單字、第二欄是內容。');
+  event.target.value='';
+ };reader.readAsText(file,'UTF-8');
+}
+function renderCard(){
+ if(!cards.length){studyScreen.classList.add('hidden');finishScreen.classList.remove('hidden');saveProgress();return}
+ const current=cards[0];isFlipped=false;cardInner.classList.remove('flipped');frontWord.textContent=current.word;backHeadWord.textContent=current.word;
+ cardProgressText.textContent=`${cards.length} / ${initialTotal}`;progressBar.style.width=`${initialTotal?((initialTotal-cards.length)/initialTotal)*100:0}%`;
+ statsText.innerHTML=`<span style="color:#ef4444">A:${stats.again}</span><span style="color:#f59e0b">H:${stats.hard}</span><span style="color:#16a34a">G:${stats.good}</span><span style="color:#3b82f6">E:${stats.easy}</span>`;
+ backDetail.innerHTML='';
+ current.detail.split('\n').filter(x=>x.trim()).forEach(line=>{
+  if(line.includes('(例句)')){
+   const wrap=document.createElement('div');wrap.className='example';
+   const btn=document.createElement('button');btn.textContent='🔊';btn.onclick=ev=>{ev.stopPropagation();speakSentence()};
+   const span=document.createElement('span');span.textContent=line.replace('(例句)','Ex:');wrap.append(btn,span);backDetail.appendChild(wrap);
+  }else{
+   const div=document.createElement('div');div.className='detailLine '+(line.includes('(')?'meta':'main');div.textContent=line;backDetail.appendChild(div);
+  }
+ }); speak(current.word);
+}
+function flipCard(){if(isFlipped||!cards.length)return;isFlipped=true;cardInner.classList.add('flipped');const s=getExampleFromDetail(cards[0].detail);if(s)speak(s)}
+function handleSRS(type){
+ if(!cards.length)return;const current=cards.shift();
+ if(type==='AGAIN'){if(cards.length>=1)cards.splice(1,0,current);else cards.push(current);stats.again++}
+ else if(type==='HARD'){cards.splice(Math.floor(cards.length/2),0,current);stats.hard++}
+ else if(type==='GOOD'){cards.push(current);stats.good++}
+ else if(type==='EASY'){stats.easy++}
+ saveProgress();renderCard();
+}
+function speak(text){if(!text||!('speechSynthesis'in window))return;window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='en-US';u.rate=.95;window.speechSynthesis.speak(u)}
+function speakWord(){if(cards[0])speak(cards[0].word)}
+function getExampleFromDetail(detail){const lines=detail.split('\n');const i=lines.findIndex(x=>x.includes('(例句)'));if(i<0)return'';const same=lines[i].replace('(例句)','').trim();return same||(lines[i+1]||'').trim()}
+function speakSentence(){if(cards[0])speak(getExampleFromDetail(cards[0].detail)||cards[0].word)}
+function toggleInfo(show){infoModal.classList.toggle('hidden',!show)}
+function clearAndReload(){localStorage.removeItem('srs_flashcard_pwa_v1');location.reload()}
+function resetApp(){if(confirm('確定要清空目前進度並重新開始嗎？'))clearAndReload()}
+window.addEventListener('load',loadProgress);
+
+if('serviceWorker' in navigator){
+ window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(console.error));
+}
+</script>
+</body>
+</html>
